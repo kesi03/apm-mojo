@@ -37,9 +37,13 @@ Passphrase: $passphrase
     $privateKey = gpg --batch --pinentry-mode loopback --passphrase $passphrase `
         --armor --export-secret-keys $fingerprint
     $privateBase64 = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($privateKey))
+    $privateFile = Join-Path $homeDir "private-key.base64"
+    $passphraseFile = Join-Path $homeDir "passphrase"
+    [IO.File]::WriteAllText($privateFile, $privateBase64, [Text.Encoding]::ASCII)
+    [IO.File]::WriteAllText($passphraseFile, $passphrase, [Text.Encoding]::ASCII)
 
-    gh secret set GPG_PRIVATE_KEY --repo $repository --body $privateBase64
-    gh secret set GPG_PASSPHRASE --repo $repository --body $passphrase
+    gh secret set GPG_PRIVATE_KEY --repo $repository --body-file $privateFile
+    gh secret set GPG_PASSPHRASE --repo $repository --body-file $passphraseFile
     Write-Output "Published GPG key fingerprint: $fingerprint"
 }
 finally {
