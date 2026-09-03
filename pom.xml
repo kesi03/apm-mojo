@@ -20,6 +20,17 @@
     </license>
   </licenses>
 
+  <developers>
+    <developer>
+      <id>kesi03</id>
+      <name>Kesi03</name>
+      <url>https://github.com/kesi03</url>
+      <roles>
+        <role>developer</role>
+      </roles>
+    </developer>
+  </developers>
+
   <scm>
     <connection>scm:git:https://github.com/kesi03/apm-mojo.git</connection>
     <developerConnection>scm:git:ssh://git@github.com/kesi03/apm-mojo.git</developerConnection>
