@@ -86,6 +86,23 @@ jobs:
           echo "test" | gpg --batch --yes --pinentry-mode loopback \
             --passphrase "$GPG_PASSPHRASE" --clearsign > /dev/null
 
+      - name: Verify Central token authentication
+        run: |
+          auth=$(printf '%s:%s' "$CENTRAL_USERNAME" "$CENTRAL_PASSWORD" | base64 -w 0)
+          status=$(curl --silent --show-error --output /tmp/central-auth-response \
+            --write-out '%{http_code}' --request POST \
+            --header "Authorization: Bearer $auth" \
+            "https://central.sonatype.com/api/v1/publisher/status?id=00000000-0000-0000-0000-000000000000")
+          case "$status" in
+            401|403)
+              echo "Central rejected the user token (HTTP $status)." >&2
+              exit 1
+              ;;
+            *)
+              echo "Central token authentication accepted (HTTP $status)."
+              ;;
+          esac
+
       - name: Deploy to Maven Central
         env:
           GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
