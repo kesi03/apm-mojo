@@ -66,30 +66,27 @@ jobs:
       - name: Set project version
         run: mvn $MAVEN_ARGS versions:set -DnewVersion="${{ steps.version.outputs.value }}" -DgenerateBackupPoms=false
 
-      - name: Generate and trust GPG key
+      - name: Import and trust GPG key
+        env:
+          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
         run: |
-          cat > key-parameters <<'EOF'
-          %no-protection
-          Key-Type: RSA
-          Key-Length: 3072
-          Name-Real: GitHub Actions Maven Publisher
-          Name-Email: github-actions@kesi03.apm-mojo
-          Expire-Date: 0
-          %commit
-          EOF
-          gpg --batch --generate-key key-parameters
+          printf '%s' "$GPG_PRIVATE_KEY" | base64 --decode | gpg --batch --import
           KEY_FP=$(gpg --list-secret-keys --with-colons | awk -F: '$1 == "fpr" { print $10; exit }')
+          test -n "$KEY_FP"
           echo "$KEY_FP:6:" | gpg --import-ownertrust
           echo "KEY_FP=$KEY_FP" >> "$GITHUB_ENV"
-
-      - name: Publish GPG public key
-        run: gpg --keyserver hkps://keyserver.ubuntu.com --send-keys "$KEY_FP"
 
       - name: Configure GPG
         run: echo "GPG_TTY=$(tty)" >> "$GITHUB_ENV"
 
       - name: Verify GPG signing
-        run: echo "test" | gpg --batch --yes --clearsign > /dev/null
+        env:
+          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+        run: |
+          echo "test" | gpg --batch --yes --pinentry-mode loopback \
+            --passphrase "$GPG_PASSPHRASE" --clearsign > /dev/null
 
       - name: Deploy to Maven Central
-        run: mvn $MAVEN_ARGS clean deploy -Pcentral
+        env:
+          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+        run: mvn $MAVEN_ARGS clean deploy -Pcentral -Dgpg.passphrase="$GPG_PASSPHRASE"

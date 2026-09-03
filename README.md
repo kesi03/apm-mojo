@@ -79,10 +79,17 @@ as `0.1.0`. Configure these repository secrets:
 
 - `CENTRAL_USERNAME` and `CENTRAL_PASSWORD`: Maven Central Portal token
 
-The workflow generates an ephemeral, non-password-protected GPG signing key
-entirely on the GitHub-hosted runner, publishes its public key to the Ubuntu
-OpenPGP keyserver, and discards the private key when the runner is destroyed.
-No GPG private-key secrets are required.
+Generate the signing key and configure the GitHub secrets with Task:
+
+```bash
+task publish-gpg-key
+```
+
+This creates a password-protected GPG key, publishes its public key to the
+Ubuntu OpenPGP keyserver, stores the base64-encoded private key in
+`GPG_PRIVATE_KEY`, stores its passphrase in `GPG_PASSPHRASE`, and removes the
+temporary local keyring. The workflow imports that key on the runner for
+signing.
 
 The `central` Maven profile creates source and Javadoc artifacts and signs all
 published artifacts.

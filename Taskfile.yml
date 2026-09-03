@@ -1,0 +1,13 @@
+version: "3"
+
+vars:
+  REPOSITORY: kesi03/apm-mojo
+  GPG_EMAIL: github-actions@kesi03.apm-mojo
+  GPG_NAME: GitHub Actions Maven Publisher
+
+tasks:
+  publish-gpg-key:
+    desc: Generate a GPG key, publish its public key, and store signing secrets in GitHub
+    platforms: [windows]
+    cmds:
+      - pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/publish-gpg-key.ps1
