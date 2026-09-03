@@ -42,8 +42,10 @@ Passphrase: $passphrase
     [IO.File]::WriteAllText($privateFile, $privateBase64, [Text.Encoding]::ASCII)
     [IO.File]::WriteAllText($passphraseFile, $passphrase, [Text.Encoding]::ASCII)
 
-    gh secret set GPG_PRIVATE_KEY --repo $repository --body-file $privateFile
-    gh secret set GPG_PASSPHRASE --repo $repository --body-file $passphraseFile
+    Get-Content -LiteralPath $privateFile -Raw | gh secret set GPG_PRIVATE_KEY --repo $repository --body -
+    if ($LASTEXITCODE -ne 0) { throw "Unable to store GPG_PRIVATE_KEY in GitHub" }
+    Get-Content -LiteralPath $passphraseFile -Raw | gh secret set GPG_PASSPHRASE --repo $repository --body -
+    if ($LASTEXITCODE -ne 0) { throw "Unable to store GPG_PASSPHRASE in GitHub" }
     Write-Output "Published GPG key fingerprint: $fingerprint"
 }
 finally {
