@@ -34,8 +34,8 @@ Passphrase: $passphrase
     "$fingerprint`:6:" | gpg --batch --import-ownertrust
     gpg --batch --keyserver hkps://keyserver.ubuntu.com --send-keys $fingerprint
 
-    $privateKey = gpg --batch --pinentry-mode loopback --passphrase $passphrase `
-        --armor --export-secret-keys $fingerprint
+    $privateKey = (gpg --batch --pinentry-mode loopback --passphrase $passphrase `
+        --armor --export-secret-keys $fingerprint | Out-String).Trim()
     $privateBase64 = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($privateKey))
     $privateFile = Join-Path $homeDir "private-key.base64"
     $passphraseFile = Join-Path $homeDir "passphrase"
