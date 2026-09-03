@@ -19,14 +19,14 @@ mvn install
 Start the proxy (the goal stays attached while the proxy runs):
 
 ```bash
-mvn com.kesi03:apm-mojo:0.1.0-SNAPSHOT:start
+mvn io.github.kesi03:apm-mojo:0.1.0-SNAPSHOT:start
 ```
 
 Use the same proxy from a Maven build:
 
 ```xml
 <plugin>
-  <groupId>com.kesi03</groupId>
+  <groupId>io.github.kesi03</groupId>
   <artifactId>apm-mojo</artifactId>
   <version>0.1.0-SNAPSHOT</version>
   <configuration>
