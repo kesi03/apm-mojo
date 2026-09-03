@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: "Version to publish (for example 0.1.0) or bump: patch, minor, major"
+        description: "Version to publish (e.g. 0.1.0 or bump: patch, minor, major)"
         required: true
         type: string
 
@@ -16,8 +16,12 @@ permissions:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+
     env:
       MAVEN_ARGS: "-B -ntp"
+      # MUST be the Sonatype Central Portal token values:
+      # CENTRAL_USERNAME = namecode
+      # CENTRAL_PASSWORD = secret
       CENTRAL_USERNAME: ${{ secrets.CENTRAL_USERNAME }}
       CENTRAL_PASSWORD: ${{ secrets.CENTRAL_PASSWORD }}
 
@@ -30,6 +34,8 @@ jobs:
           distribution: temurin
           java-version: "17"
           cache: maven
+
+          # Inject correct Sonatype Central credentials
           server-id: central
           server-username: CENTRAL_USERNAME
           server-password: CENTRAL_PASSWORD
@@ -47,19 +53,12 @@ jobs:
           if [[ "$version" =~ ^(patch|minor|major)$ ]]; then
             current=$(sed -n 's:.*<version>\([^<]*\)</version>.*:\1:p' pom.xml | head -n1)
             current="${current%-SNAPSHOT}"
-            if [[ ! "$current" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-              echo "Cannot bump invalid project version: $current" >&2
-              exit 1
-            fi
             IFS=. read -r major minor patch <<< "$current"
             case "$version" in
               major) version="$((major + 1)).0.0" ;;
               minor) version="$major.$((minor + 1)).0" ;;
               patch) version="$major.$minor.$((patch + 1))" ;;
             esac
-          elif [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "Invalid release version: $version" >&2
-            exit 1
           fi
 
           echo "value=$version" >> "$GITHUB_OUTPUT"
@@ -80,21 +79,17 @@ jobs:
           EOF
           gpg --batch --generate-key key-parameters
           KEY_FP=$(gpg --list-secret-keys --with-colons | awk -F: '$1 == "fpr" { print $10; exit }')
-          test -n "$KEY_FP"
           echo "$KEY_FP:6:" | gpg --import-ownertrust
           echo "KEY_FP=$KEY_FP" >> "$GITHUB_ENV"
-          rm -f key-parameters
 
       - name: Publish GPG public key
-        run: |
-          gpg --keyserver hkps://keyserver.ubuntu.com --send-keys "$KEY_FP"
+        run: gpg --keyserver hkps://keyserver.ubuntu.com --send-keys "$KEY_FP"
 
       - name: Configure GPG
         run: echo "GPG_TTY=$(tty)" >> "$GITHUB_ENV"
 
       - name: Verify GPG signing
-        run: |
-          echo "test" | gpg --batch --yes --clearsign > /dev/null
+        run: echo "test" | gpg --batch --yes --clearsign > /dev/null
 
       - name: Deploy to Maven Central
         run: mvn $MAVEN_ARGS clean deploy -Pcentral
